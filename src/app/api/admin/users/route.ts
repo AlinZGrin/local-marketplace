@@ -34,13 +34,13 @@ export async function GET(request: NextRequest) {
         id: true,
         name: true,
         email: true,
-        isActive: true,
+        isSuspended: true,
         isAdmin: true,
         createdAt: true,
         _count: {
           select: {
             listings: true,
-            messages: true
+            sentMessages: true
           }
         }
       }
@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
       ...user,
       _count: {
         listings: user._count.listings,
-        messages: user._count.messages
+        messages: user._count.sentMessages
       }
     }))
 

@@ -37,7 +37,7 @@ interface AdminUser {
   id: string
   name: string | null
   email: string
-  isActive: boolean
+  isSuspended: boolean
   isAdmin: boolean
   createdAt: string
   _count: {
@@ -52,7 +52,7 @@ interface AdminListing {
   price: number
   status: string
   createdAt: string
-  seller: {
+  user: {
     name: string | null
     email: string
   }
@@ -289,8 +289,8 @@ export function AdminDashboard() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex space-x-2">
-                          <Badge variant={user.isActive ? 'success' : 'danger'}>
-                            {user.isActive ? 'Active' : 'Suspended'}
+                          <Badge variant={!user.isSuspended ? 'success' : 'danger'}>
+                            {!user.isSuspended ? 'Active' : 'Suspended'}
                           </Badge>
                           {user.isAdmin && (
                             <Badge variant="primary">Admin</Badge>
@@ -305,7 +305,7 @@ export function AdminDashboard() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <div className="flex justify-end space-x-2">
-                          {user.isActive ? (
+                          {!user.isSuspended ? (
                             <Button
                               variant="danger"
                               size="sm"
@@ -376,10 +376,10 @@ export function AdminDashboard() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900">
-                          {listing.seller.name || 'Anonymous'}
+                          {listing.user.name || 'Anonymous'}
                         </div>
                         <div className="text-sm text-gray-500">
-                          {listing.seller.email}
+                          {listing.user.email}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">

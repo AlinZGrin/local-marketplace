@@ -21,35 +21,12 @@ export async function GET(
     const thread = await prisma.messageThread.findFirst({
       where: {
         id: params.threadId,
-        participants: {
-          some: {
-            id: session.user.id
-          }
-        }
+        OR: [
+          { buyerId: session.user.id },
+          { sellerId: session.user.id }
+        ]
       },
       include: {
-        listing: {
-          select: {
-            id: true,
-            title: true,
-            images: true,
-            price: true,
-            seller: {
-              select: {
-                id: true,
-                name: true,
-                image: true
-              }
-            }
-          }
-        },
-        participants: {
-          select: {
-            id: true,
-            name: true,
-            image: true
-          }
-        },
         messages: {
           orderBy: {
             createdAt: 'asc'
@@ -77,14 +54,16 @@ export async function GET(
     // Transform the data to match frontend interface
     const transformedThread = {
       id: thread.id,
-      listing: thread.listing,
-      participants: thread.participants,
+      buyerId: thread.buyerId,
+      sellerId: thread.sellerId,
+      listingId: thread.listingId,
       messages: thread.messages.map((message: any) => ({
         id: message.id,
         content: message.content,
         senderId: message.senderId,
+        type: message.type,
+        isRead: message.isRead,
         createdAt: message.createdAt.toISOString(),
-        readAt: message.readAt?.toISOString(),
         sender: message.sender
       }))
     }

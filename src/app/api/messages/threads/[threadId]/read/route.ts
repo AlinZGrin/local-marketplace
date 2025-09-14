@@ -22,11 +22,10 @@ export async function POST(
     const thread = await prisma.messageThread.findFirst({
       where: {
         id: params.threadId,
-        participants: {
-          some: {
-            id: session.user.id
-          }
-        }
+        OR: [
+          { buyerId: session.user.id },
+          { sellerId: session.user.id }
+        ]
       }
     })
 

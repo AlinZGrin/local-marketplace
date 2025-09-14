@@ -13,29 +13,12 @@ export async function GET(request: NextRequest) {
 
     const threads = await prisma.messageThread.findMany({
       where: {
-        participants: {
-          some: {
-            id: session.user.id,
-          },
-        },
+        OR: [
+          { buyerId: session.user.id },
+          { sellerId: session.user.id }
+        ]
       },
       include: {
-        listing: {
-          select: {
-            id: true,
-            title: true,
-            price: true,
-            images: true,
-            status: true,
-          },
-        },
-        participants: {
-          select: {
-            id: true,
-            name: true,
-            image: true,
-          },
-        },
         messages: {
           take: 1,
           orderBy: { createdAt: 'desc' },
@@ -61,14 +44,15 @@ export async function GET(request: NextRequest) {
           }
         }
       },
-      orderBy: { updatedAt: 'desc' },
+      orderBy: { lastMessageAt: 'desc' },
     })
 
     // Transform the data to match frontend interface
     const transformedThreads = threads.map((thread: any) => ({
       id: thread.id,
-      listing: thread.listing,
-      participants: thread.participants,
+      listingId: thread.listingId,
+      buyerId: thread.buyerId,
+      sellerId: thread.sellerId,
       lastMessage: thread.messages[0] ? {
         id: thread.messages[0].id,
         content: thread.messages[0].content,
@@ -76,7 +60,7 @@ export async function GET(request: NextRequest) {
         createdAt: thread.messages[0].createdAt.toISOString()
       } : undefined,
       unreadCount: thread._count.messages,
-      updatedAt: thread.updatedAt.toISOString()
+      lastMessageAt: thread.lastMessageAt.toISOString()
     }))
 
     return NextResponse.json({ threads: transformedThreads })
@@ -106,36 +90,31 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Get listing to determine buyer/seller roles
+    const listing = await prisma.listing.findUnique({
+      where: { id: listingId },
+      select: { userId: true }
+    })
+
+    if (!listing) {
+      return NextResponse.json(
+        { error: 'Listing not found' },
+        { status: 404 }
+      )
+    }
+
+    // Determine buyer and seller
+    const isBuyer = session.user.id !== listing.userId
+    const buyerId = isBuyer ? session.user.id : participantId
+    const sellerId = isBuyer ? participantId : session.user.id
+
     // Check if thread already exists
     const existingThread = await prisma.messageThread.findFirst({
       where: {
         listingId,
-        participants: {
-          every: {
-            id: {
-              in: [session.user.id, participantId],
-            },
-          },
-        },
-      },
-      include: {
-        listing: {
-          select: {
-            id: true,
-            title: true,
-            price: true,
-            images: true,
-            status: true,
-          },
-        },
-        participants: {
-          select: {
-            id: true,
-            name: true,
-            image: true,
-          },
-        },
-      },
+        buyerId,
+        sellerId
+      }
     })
 
     if (existingThread) {
@@ -146,31 +125,9 @@ export async function POST(request: NextRequest) {
     const newThread = await prisma.messageThread.create({
       data: {
         listingId,
-        participants: {
-          connect: [
-            { id: session.user.id },
-            { id: participantId },
-          ],
-        },
-      },
-      include: {
-        listing: {
-          select: {
-            id: true,
-            title: true,
-            price: true,
-            images: true,
-            status: true,
-          },
-        },
-        participants: {
-          select: {
-            id: true,
-            name: true,
-            image: true,
-          },
-        },
-      },
+        buyerId,
+        sellerId
+      }
     })
 
     return NextResponse.json(newThread, { status: 201 })

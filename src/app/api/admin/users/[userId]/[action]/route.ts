@@ -24,10 +24,10 @@ export async function POST(
 
     switch (action) {
       case 'suspend':
-        updateData = { isActive: false }
+        updateData = { isSuspended: true }
         break
       case 'unsuspend':
-        updateData = { isActive: true }
+        updateData = { isSuspended: false }
         break
       case 'promote':
         updateData = { isAdmin: true }
@@ -46,7 +46,7 @@ export async function POST(
         id: true,
         name: true,
         email: true,
-        isActive: true,
+        isSuspended: true,
         isAdmin: true
       }
     })
@@ -73,9 +73,8 @@ export async function POST(
     await prisma.adminAction.create({
       data: {
         adminId: session.user.id,
-        type: actionType as any,
-        targetType: 'USER',
-        targetId: userId,
+        type: actionType,
+        userId: userId,
         reason: `Admin ${action} action`
       }
     })

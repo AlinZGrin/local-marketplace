@@ -7,14 +7,13 @@ import { z } from 'zod'
 const listingSchema = z.object({
   title: z.string().min(3, 'Title must be at least 3 characters'),
   description: z.string().min(10, 'Description must be at least 10 characters'),
-  price: z.number().min(0.01, 'Price must be greater than 0'),
+  price: z.number().min(1, 'Price must be greater than 0'),
   condition: z.enum(['NEW', 'LIKE_NEW', 'GOOD', 'FAIR', 'POOR']),
   categoryId: z.string().min(1, 'Category is required'),
   images: z.array(z.string()).min(1, 'At least one image is required').max(5, 'Maximum 5 images allowed'),
   locationLat: z.number(),
   locationLng: z.number(),
-  locationAddr: z.string(),
-  isNegotiable: z.boolean().default(true),
+  address: z.string(),
 })
 
 // GET /api/listings - Get all listings with filters
@@ -27,7 +26,6 @@ export async function GET(request: NextRequest) {
     const minPrice = searchParams.get('minPrice')
     const maxPrice = searchParams.get('maxPrice')
     const location = searchParams.get('location')
-    const radius = searchParams.get('radius')
     const sortBy = searchParams.get('sortBy') || 'createdAt'
     const sortOrder = searchParams.get('sortOrder') || 'desc'
     const page = parseInt(searchParams.get('page') || '1')
@@ -48,7 +46,7 @@ export async function GET(request: NextRequest) {
     }
 
     if (category) {
-      where.category = category
+      where.categoryId = category
     }
 
     if (condition) {
@@ -57,13 +55,12 @@ export async function GET(request: NextRequest) {
 
     if (minPrice || maxPrice) {
       where.price = {}
-      if (minPrice) where.price.gte = parseFloat(minPrice)
-      if (maxPrice) where.price.lte = parseFloat(maxPrice)
+      if (minPrice) where.price.gte = parseInt(minPrice)
+      if (maxPrice) where.price.lte = parseInt(maxPrice)
     }
 
     if (location) {
-      // Simple location filtering - in production you'd use proper geospatial queries
-      where.location = { contains: location, mode: 'insensitive' }
+      where.address = { contains: location, mode: 'insensitive' }
     }
 
     // Build order by clause
@@ -77,21 +74,25 @@ export async function GET(request: NextRequest) {
         skip,
         take: limit,
         include: {
-          seller: {
+          user: {
             select: {
               id: true,
               name: true,
               image: true,
-              _count: {
-                select: {
-                  ratingsReceived: true
-                }
-              }
+              rating: true,
+              totalRatings: true,
+            },
+          },
+          category: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
             },
           },
           _count: {
             select: {
-              offers: true
+              offers: true,
             },
           },
         },
@@ -106,21 +107,22 @@ export async function GET(request: NextRequest) {
       description: listing.description,
       price: listing.price,
       condition: listing.condition,
-      locationAddr: listing.location,
-      images: listing.images || [],
+      address: listing.address,
+            images: listing.images || [], // PostgreSQL arrays are already arrays
+      views: listing.views,
+      isFeatured: listing.isFeatured,
       createdAt: listing.createdAt,
-      seller: {
-        id: listing.seller.id,
-        name: listing.seller.name,
-        image: listing.seller.image,
-        rating: 4.5 // Placeholder rating - in production calculate from receivedRatings
+      updatedAt: listing.updatedAt,
+      user: {
+        id: listing.user.id,
+        name: listing.user.name,
+        image: listing.user.image,
+        rating: listing.user.rating,
+        totalRatings: listing.user.totalRatings,
       },
-      category: listing.category ? {
-        name: listing.category,
-        slug: listing.category.toLowerCase().replace(/\s+/g, '-')
-      } : undefined,
+      category: listing.category,
       _count: {
-        offers: listing._count.offers
+        offers: listing._count.offers,
       }
     }))
 
@@ -156,10 +158,10 @@ export async function POST(request: NextRequest) {
     const listing = await prisma.listing.create({
       data: {
         ...validatedData,
-        sellerId: session.user.id,
+        userId: session.user.id,
       },
       include: {
-        seller: {
+        user: {
           select: {
             id: true,
             name: true,

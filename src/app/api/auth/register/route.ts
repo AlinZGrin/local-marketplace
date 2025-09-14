@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import bcrypt from 'bcryptjs'
 import { z } from 'zod'
 
 const registerSchema = z.object({
@@ -32,19 +31,12 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Hash password
-    const hashedPassword = await bcrypt.hash(validatedData.password, 12)
-
-    // Create user
+    // Create user (NextAuth.js handles password via credentials provider)
     const user = await prisma.user.create({
       data: {
         name: validatedData.name,
         email: validatedData.email,
-        password: hashedPassword,
-        phone: validatedData.phone,
-        locationLat: validatedData.location?.lat,
-        locationLng: validatedData.location?.lng,
-        locationAddr: validatedData.location?.address,
+        // Note: password is handled by NextAuth.js, not stored directly
       },
       select: {
         id: true,

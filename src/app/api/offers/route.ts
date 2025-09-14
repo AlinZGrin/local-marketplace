@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
     const offers = await prisma.offer.findMany({
       where: type === 'made' 
         ? { buyerId: session.user.id }
-        : { listing: { sellerId: session.user.id } },
+        : { listing: { userId: session.user.id } },
       include: {
         buyer: {
           select: {
@@ -40,8 +40,8 @@ export async function GET(request: NextRequest) {
             title: true,
             price: true,
             images: true,
-            sellerId: true,
-            seller: {
+            userId: true,
+            user: {
               select: {
                 id: true,
                 name: true,
@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
       where: { id: validatedData.listingId },
       select: { 
         id: true, 
-        sellerId: true, 
+        userId: true, 
         status: true, 
         price: true,
         title: true,
@@ -101,7 +101,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    if (listing.sellerId === session.user.id) {
+    if (listing.userId === session.user.id) {
       return NextResponse.json(
         { error: 'Cannot make offer on your own listing' },
         { status: 400 }
@@ -144,7 +144,7 @@ export async function POST(request: NextRequest) {
             title: true,
             price: true,
             images: true,
-            sellerId: true,
+            userId: true,
           },
         },
       },
@@ -153,12 +153,12 @@ export async function POST(request: NextRequest) {
     // Create notification for seller
     await prisma.notification.create({
       data: {
-        userId: listing.sellerId,
+        userId: listing.userId,
         type: 'NEW_OFFER',
         title: 'New Offer Received',
         content: `You received a $${validatedData.amount} offer on "${listing.title}"`,
         listingId: validatedData.listingId,
-        offerId: offer.id,
+        metadata: { offerId: offer.id },
       },
     })
 

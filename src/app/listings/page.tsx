@@ -53,7 +53,7 @@ interface SearchFilters {
 
 export default function ListingsPage() {
   const searchParams = useSearchParams()
-  const [listings, setListings] = useState<Listing[]>([])
+  const [listings, setListings] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')

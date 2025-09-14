@@ -20,9 +20,9 @@ export type User = {
   updatedAt: Date
 }
 
-export type UserWithListings = Prisma.UserGetPayload<{
-  include: { listings: true }
-}>
+export type UserWithListings = User & {
+  listings: Listing[]
+}
 
 export type UserProfile = Pick<User, 'id' | 'name' | 'image' | 'bio' | 'rating' | 'totalRatings' | 'createdAt'>
 
@@ -36,38 +36,35 @@ export type Listing = {
   images: string[]
   locationLat: number
   locationLng: number
-  locationAddr: string
-  sellerId: string
+  address: string | null
+  userId: string
   categoryId: string
   status: 'ACTIVE' | 'SOLD' | 'INACTIVE' | 'SUSPENDED' | 'DELETED'
-  featured: boolean
-  featuredUntil: Date | null
+  isActive: boolean
+  isFeatured: boolean
   views: number
-  isNegotiable: boolean
   createdAt: Date
   updatedAt: Date
 }
 
-export type ListingWithDetails = Prisma.ListingGetPayload<{
-  include: {
-    seller: {
-      select: {
-        id: true
-        name: true
-        image: true
-        rating: true
-        totalRatings: true
-      }
-    }
-    category: true
-    _count: {
-      select: {
-        offers: true
-        threads: true
-      }
-    }
+export type ListingWithDetails = Listing & {
+  user: {
+    id: string
+    name: string | null
+    image: string | null
+    rating: number
+    totalRatings: number
   }
-}>
+  category: {
+    id: string
+    name: string
+    slug: string
+  }
+  _count: {
+    offers: number
+    reports: number
+  }
+}
 
 export type ListingFormData = {
   title: string
@@ -92,38 +89,25 @@ export type MessageThread = {
   updatedAt: Date
 }
 
-export type MessageThreadWithDetails = Prisma.MessageThreadGetPayload<{
-  include: {
-    listing: {
-      select: {
-        id: true
-        title: true
-        price: true
-        images: true
-        status: true
-      }
+export type MessageThreadWithDetails = {
+  id: string
+  listingId: string
+  buyerId: string
+  sellerId: string
+  lastMessageAt: Date
+  createdAt: Date
+  updatedAt: Date
+  messages?: {
+    id: string
+    content: string
+    senderId: string
+    createdAt: Date
+    sender: {
+      id: string
+      name: string | null
     }
-    participants: {
-      select: {
-        id: true
-        name: true
-        image: true
-      }
-    }
-    messages: {
-      take: 1
-      orderBy: { createdAt: 'desc' }
-      include: {
-        sender: {
-          select: {
-            id: true
-            name: true
-          }
-        }
-      }
-    }
-  }
-}>
+  }[]
+}
 
 export type Message = {
   id: string
@@ -136,17 +120,13 @@ export type Message = {
   createdAt: Date
 }
 
-export type MessageWithSender = Prisma.MessageGetPayload<{
-  include: {
-    sender: {
-      select: {
-        id: true
-        name: true
-        image: true
-      }
-    }
+export type MessageWithSender = Message & {
+  sender: {
+    id: string
+    name: string | null
+    image: string | null
   }
-}>
+}
 
 // Offer Types
 export type Offer = {
@@ -161,27 +141,21 @@ export type Offer = {
   updatedAt: Date
 }
 
-export type OfferWithDetails = Prisma.OfferGetPayload<{
-  include: {
-    buyer: {
-      select: {
-        id: true
-        name: true
-        image: true
-        rating: true
-      }
-    }
-    listing: {
-      select: {
-        id: true
-        title: true
-        price: true
-        images: true
-        sellerId: true
-      }
-    }
+export type OfferWithDetails = Offer & {
+  buyer: {
+    id: string
+    name: string | null
+    image: string | null
+    rating: number
   }
-}>
+  listing: {
+    id: string
+    title: string
+    price: number
+    images: string[]
+    userId: string
+  }
+}
 
 // Category Types
 export type Category = {
@@ -214,17 +188,13 @@ export type Rating = {
   createdAt: Date
 }
 
-export type RatingWithDetails = Prisma.RatingGetPayload<{
-  include: {
-    giver: {
-      select: {
-        id: true
-        name: true
-        image: true
-      }
-    }
+export type RatingWithDetails = Rating & {
+  rater: {
+    id: string
+    name: string | null
+    image: string | null
   }
-}>
+}
 
 // Report Types
 export type Report = {
@@ -241,36 +211,26 @@ export type Report = {
   createdAt: Date
 }
 
-export type ReportWithDetails = Prisma.ReportGetPayload<{
-  include: {
-    reporter: {
-      select: {
-        id: true
-        name: true
-        email: true
-      }
-    }
-    listing: {
-      select: {
-        id: true
-        title: true
-        seller: {
-          select: {
-            id: true
-            name: true
-          }
-        }
-      }
-    }
-    reportedUser: {
-      select: {
-        id: true
-        name: true
-        email: true
-      }
+export type ReportWithDetails = Report & {
+  reporter: {
+    id: string
+    name: string | null
+    email: string
+  }
+  listing?: {
+    id: string
+    title: string
+    user: {
+      id: string
+      name: string | null
     }
   }
-}>
+  reportedUser?: {
+    id: string
+    name: string | null
+    email: string
+  }
+}
 
 // Notification Types
 export type Notification = {
@@ -365,10 +325,10 @@ export type AdminAction = {
   id: string
   adminId: string
   type: 'SUSPEND_USER' | 'UNSUSPEND_USER' | 'DELETE_LISTING' | 'FEATURE_LISTING' | 'UNFEATURE_LISTING' | 'RESOLVE_REPORT' | 'DISMISS_REPORT' | 'SEND_WARNING'
-  targetType: string
-  targetId: string
   reason: string | null
   details: any
+  userId: string | null
+  listingId: string | null
   reportId: string | null
   createdAt: Date
 }

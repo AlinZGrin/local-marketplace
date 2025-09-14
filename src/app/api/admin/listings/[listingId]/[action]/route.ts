@@ -32,13 +32,13 @@ export async function POST(
       case 'feature':
         result = await prisma.listing.update({
           where: { id: listingId },
-          data: { featured: true }
+          data: { isFeatured: true }
         })
         break
       case 'unfeature':
         result = await prisma.listing.update({
           where: { id: listingId },
-          data: { featured: false }
+          data: { isFeatured: false }
         })
         break
       default:
@@ -64,9 +64,8 @@ export async function POST(
     await prisma.adminAction.create({
       data: {
         adminId: session.user.id,
-        type: actionType as any,
-        targetType: 'LISTING',
-        targetId: listingId,
+        type: actionType,
+        listingId: listingId,
         reason: `Admin ${action} action`
       }
     })

@@ -6,28 +6,29 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
+// NextAuth.js models
 model Account {
   id                String  @id @default(cuid())
   userId            String
   type              String
   provider          String
   providerAccountId String
-  refresh_token     String? @db.Text
-  access_token      String? @db.Text
+  refresh_token     String?
+  access_token      String?
   expires_at        Int?
   token_type        String?
   scope             String?
-  id_token          String? @db.Text
+  id_token          String?
   session_state     String?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
-  @@map("accounts")
 }
 
 model Session {
@@ -36,43 +37,6 @@ model Session {
   userId       String
   expires      DateTime
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("sessions")
-}
-
-model User {
-  id            String    @id @default(cuid())
-  name          String?
-  email         String    @unique
-  emailVerified DateTime?
-  image         String?
-  password      String?
-  phone         String?
-  bio           String?
-  locationLat   Float?
-  locationLng   Float?
-  locationAddr  String?
-  rating        Float     @default(0)
-  totalRatings  Int       @default(0)
-  isActive      Boolean   @default(true)
-  isAdmin       Boolean   @default(false)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-
-  accounts         Account[]
-  sessions         Session[]
-  listings         Listing[]
-  messages         Message[]
-  offers           Offer[]
-  ratingsGiven     Rating[]        @relation("RatingGiver")
-  ratingsReceived  Rating[]        @relation("RatingReceiver")
-  reports          Report[]
-  reportedListings Report[]        @relation("ReportedUser")
-  threads          MessageThread[] @relation("ThreadParticipants")
-  notifications    Notification[]
-  adminActions     AdminAction[]
-
-  @@map("users")
 }
 
 model VerificationToken {
@@ -81,262 +45,213 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
-  @@map("verification_tokens")
+}
+
+// Application models
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  bio           String?
+  location      String?
+  phoneNumber   String?
+  rating        Float     @default(0)
+  totalRatings  Int       @default(0)
+  isSuspended   Boolean   @default(false)
+  isAdmin       Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts      Account[]
+  sessions      Session[]
+  listings      Listing[]
+  sentMessages  Message[] @relation("SentMessages")
+  offers        Offer[]
+  reports       Report[]
+  ratings       Rating[]  @relation("UserRatings")
+  givenRatings  Rating[]  @relation("GivenRatings")
+  adminActions  AdminAction[]
+  notifications Notification[]
 }
 
 model Category {
-  id          String    @id @default(cuid())
-  name        String    @unique
-  slug        String    @unique
-  description String?
-  icon        String?
-  parentId    String?
-  isActive    Boolean   @default(true)
-  sortOrder   Int       @default(0)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-
-  parent   Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
-  children Category[] @relation("CategoryHierarchy")
+  id       String    @id @default(cuid())
+  name     String    @unique
+  slug     String    @unique
   listings Listing[]
 
-  @@map("categories")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Listing {
-  id           String      @id @default(cuid())
-  title        String
-  description  String      @db.Text
-  price        Float
-  condition    Condition
-  images       String[]
-  locationLat  Float
-  locationLng  Float
-  locationAddr String
-  sellerId     String
-  categoryId   String
-  status       ListingStatus @default(ACTIVE)
-  featured     Boolean     @default(false)
-  featuredUntil DateTime?
-  views        Int         @default(0)
-  isNegotiable Boolean     @default(true)
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
+  id          String   @id @default(cuid())
+  title       String
+  description String   @db.Text
+  price       Int
+  condition   String   // "NEW", "LIKE_NEW", "GOOD", "FAIR", "POOR"
+  images      String[] // PostgreSQL supports arrays
+  locationLat Float
+  locationLng Float
+  address     String?
+  isActive    Boolean  @default(true)
+  isFeatured  Boolean  @default(false)
+  status      String   @default("ACTIVE") // "ACTIVE", "SOLD", "INACTIVE", "SUSPENDED", "DELETED"
+  views       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  seller       User            @relation(fields: [sellerId], references: [id], onDelete: Cascade)
-  category     Category        @relation(fields: [categoryId], references: [id])
-  offers       Offer[]
-  threads      MessageThread[]
-  reports      Report[]
+  userId     String
+  categoryId String
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category Category @relation(fields: [categoryId], references: [id])
+
+  offers        Offer[]
+  reports       Report[]
+  ratings       Rating[]
   notifications Notification[]
 
-  @@index([status, featured, createdAt])
-  @@index([categoryId, status])
-  @@index([sellerId, status])
-  @@map("listings")
+  @@index([userId])
+  @@index([categoryId])
+  @@index([isActive])
+  @@index([isFeatured])
+  @@index([createdAt])
 }
 
 model MessageThread {
   id        String   @id @default(cuid())
   listingId String
+  buyerId   String
+  sellerId  String
+  lastMessageAt DateTime @default(now())
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  listing      Listing   @relation(fields: [listingId], references: [id], onDelete: Cascade)
-  messages     Message[]
-  participants User[]    @relation("ThreadParticipants")
-  notifications Notification[]
+  messages Message[]
 
-  @@map("message_threads")
+  @@unique([listingId, buyerId, sellerId])
+  @@index([buyerId])
+  @@index([sellerId])
+  @@index([lastMessageAt])
 }
 
 model Message {
-  id        String      @id @default(cuid())
-  threadId  String
-  senderId  String
-  content   String      @db.Text
-  type      MessageType @default(TEXT)
-  metadata  Json?
-  isRead    Boolean     @default(false)
-  createdAt DateTime    @default(now())
+  id       String      @id @default(cuid())
+  threadId String
+  senderId String
+  content  String      @db.Text
+  type     String      @default("TEXT") // "TEXT", "OFFER", "IMAGE", "SYSTEM"
+  metadata Json?       // PostgreSQL supports JSON
+  isRead   Boolean     @default(false)
+  createdAt DateTime   @default(now())
 
-  thread   MessageThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
-  sender   User          @relation(fields: [senderId], references: [id], onDelete: Cascade)
-  notifications Notification[]
+  thread MessageThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  sender User          @relation("SentMessages", fields: [senderId], references: [id])
 
-  @@index([threadId, createdAt])
-  @@map("messages")
+  @@index([threadId])
+  @@index([senderId])
+  @@index([createdAt])
 }
 
 model Offer {
-  id        String      @id @default(cuid())
+  id        String   @id @default(cuid())
+  amount    Int
+  message   String?
+  status    String   @default("PENDING") // "PENDING", "ACCEPTED", "DECLINED", "EXPIRED", "WITHDRAWN"
+  expiresAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   listingId String
   buyerId   String
-  amount    Float
-  message   String?
-  status    OfferStatus @default(PENDING)
-  expiresAt DateTime?
-  createdAt DateTime    @default(now())
-  updatedAt DateTime    @updatedAt
 
   listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
-  buyer   User    @relation(fields: [buyerId], references: [id], onDelete: Cascade)
-  notifications Notification[]
+  buyer   User    @relation(fields: [buyerId], references: [id])
 
-  @@index([listingId, status])
-  @@index([buyerId, status])
-  @@map("offers")
+  @@index([listingId])
+  @@index([buyerId])
+  @@index([status])
 }
 
 model Rating {
-  id         String  @id @default(cuid())
-  giverId    String
-  receiverId String
-  listingId  String?
-  score      Int     @db.SmallInt
-  comment    String?
-  createdAt  DateTime @default(now())
+  id        String   @id @default(cuid())
+  rating    Int      // 1-5 stars
+  comment   String?
+  createdAt DateTime @default(now())
 
-  giver    User @relation("RatingGiver", fields: [giverId], references: [id], onDelete: Cascade)
-  receiver User @relation("RatingReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+  listingId String?
+  userId    String  // User being rated
+  raterId   String  // User giving the rating
 
-  @@unique([giverId, receiverId, listingId])
-  @@index([receiverId])
-  @@map("ratings")
+  listing Listing? @relation(fields: [listingId], references: [id])
+  user    User     @relation("UserRatings", fields: [userId], references: [id])
+  rater   User     @relation("GivenRatings", fields: [raterId], references: [id])
+
+  @@index([userId])
+  @@index([raterId])
 }
 
 model Report {
-  id          String       @id @default(cuid())
-  reporterId  String
-  listingId   String?
-  reportedUserId String?
-  type        ReportType
+  id          String   @id @default(cuid())
+  type        String   // "INAPPROPRIATE_CONTENT", "SPAM", "FRAUD", "HARASSMENT", "FAKE_LISTING", "OTHER"
   reason      String
-  description String?      @db.Text
-  status      ReportStatus @default(PENDING)
-  resolvedBy  String?
-  resolvedAt  DateTime?
-  createdAt   DateTime     @default(now())
+  description String?  @db.Text
+  status      String   @default("PENDING") // "PENDING", "INVESTIGATING", "RESOLVED", "DISMISSED"
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  reporter     User     @relation(fields: [reporterId], references: [id], onDelete: Cascade)
-  listing      Listing? @relation(fields: [listingId], references: [id], onDelete: Cascade)
-  reportedUser User?    @relation("ReportedUser", fields: [reportedUserId], references: [id], onDelete: Cascade)
+  reporterId String
+  listingId  String?
+  reportedUserId String?
+
+  reporter     User     @relation(fields: [reporterId], references: [id])
+  listing      Listing? @relation(fields: [listingId], references: [id])
   adminAction  AdminAction?
 
-  @@index([status, createdAt])
-  @@map("reports")
+  @@index([reporterId])
+  @@index([listingId])
+  @@index([status])
 }
 
 model AdminAction {
-  id         String           @id @default(cuid())
-  adminId    String
-  type       AdminActionType
-  targetType String
-  targetId   String
-  reason     String?
-  details    Json?
-  reportId   String?          @unique
-  createdAt  DateTime         @default(now())
+  id        String   @id @default(cuid())
+  type      String   // "SUSPEND_USER", "UNSUSPEND_USER", "DELETE_LISTING", etc.
+  reason    String?
+  details   Json?    // PostgreSQL supports JSON
+  createdAt DateTime @default(now())
 
-  admin  User    @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  adminId  String
+  userId   String?
+  listingId String?
+  reportId String? @unique
+
+  admin  User    @relation(fields: [adminId], references: [id])
   report Report? @relation(fields: [reportId], references: [id])
 
-  @@index([adminId, createdAt])
-  @@index([targetType, targetId])
-  @@map("admin_actions")
+  @@index([adminId])
+  @@index([userId])
+  @@index([createdAt])
 }
 
 model Notification {
-  id        String           @id @default(cuid())
-  userId    String
-  type      NotificationType
+  id        String   @id @default(cuid())
+  type      String   // "NEW_MESSAGE", "NEW_OFFER", "OFFER_ACCEPTED", etc.
   title     String
-  content   String           @db.Text
-  isRead    Boolean          @default(false)
-  metadata  Json?
+  content   String   @db.Text
+  isRead    Boolean  @default(false)
+  metadata  Json?    // PostgreSQL supports JSON
+  createdAt DateTime @default(now())
+
+  userId    String
   listingId String?
-  messageId String?
-  threadId  String?
-  offerId   String?
-  createdAt DateTime         @default(now())
 
-  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  listing      Listing?       @relation(fields: [listingId], references: [id], onDelete: Cascade)
-  relatedMessage Message?     @relation(fields: [messageId], references: [id], onDelete: Cascade)
-  thread       MessageThread? @relation(fields: [threadId], references: [id], onDelete: Cascade)
-  offer        Offer?         @relation(fields: [offerId], references: [id], onDelete: Cascade)
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  listing Listing? @relation(fields: [listingId], references: [id])
 
-  @@index([userId, isRead])
-  @@index([userId, createdAt])
-  @@map("notifications")
-}
-
-// Enums
-enum Condition {
-  NEW
-  LIKE_NEW
-  GOOD
-  FAIR
-  POOR
-}
-
-enum ListingStatus {
-  ACTIVE
-  SOLD
-  INACTIVE
-  SUSPENDED
-  DELETED
-}
-
-enum MessageType {
-  TEXT
-  OFFER
-  IMAGE
-  SYSTEM
-}
-
-enum OfferStatus {
-  PENDING
-  ACCEPTED
-  DECLINED
-  EXPIRED
-  WITHDRAWN
-}
-
-enum ReportType {
-  INAPPROPRIATE_CONTENT
-  SPAM
-  FRAUD
-  HARASSMENT
-  FAKE_LISTING
-  OTHER
-}
-
-enum ReportStatus {
-  PENDING
-  INVESTIGATING
-  RESOLVED
-  DISMISSED
-}
-
-enum AdminActionType {
-  SUSPEND_USER
-  UNSUSPEND_USER
-  DELETE_LISTING
-  FEATURE_LISTING
-  UNFEATURE_LISTING
-  RESOLVE_REPORT
-  DISMISS_REPORT
-  SEND_WARNING
-}
-
-enum NotificationType {
-  NEW_MESSAGE
-  NEW_OFFER
-  OFFER_ACCEPTED
-  OFFER_DECLINED
-  LISTING_SOLD
-  LISTING_FEATURED
-  ACCOUNT_WARNING
-  SYSTEM_MESSAGE
+  @@index([userId])
+  @@index([isRead])
+  @@index([createdAt])
 }

@@ -142,9 +142,9 @@ export class NotificationService {
   // Send system notification to all users
   static async notifyAllUsers(title: string, message: string) {
     try {
-      // Get all active users
+      // Get all active users (not suspended)
       const users = await prisma.user.findMany({
-        where: { isActive: true },
+        where: { isSuspended: false },
         select: { id: true }
       })
 

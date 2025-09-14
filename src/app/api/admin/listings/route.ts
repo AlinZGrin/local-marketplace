@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
         price: true,
         status: true,
         createdAt: true,
-        seller: {
+        user: {
           select: {
             name: true,
             email: true

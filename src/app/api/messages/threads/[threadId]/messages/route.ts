@@ -32,11 +32,10 @@ export async function POST(
     const thread = await prisma.messageThread.findFirst({
       where: {
         id: params.threadId,
-        participants: {
-          some: {
-            id: session.user.id
-          }
-        }
+        OR: [
+          { buyerId: session.user.id },
+          { sellerId: session.user.id }
+        ]
       }
     })
 
@@ -65,13 +64,13 @@ export async function POST(
       }
     })
 
-    // Update thread's updatedAt timestamp
+    // Update thread's lastMessageAt timestamp
     await prisma.messageThread.update({
       where: {
         id: params.threadId
       },
       data: {
-        updatedAt: new Date()
+        lastMessageAt: new Date()
       }
     })
 

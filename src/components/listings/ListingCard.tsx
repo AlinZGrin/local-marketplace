@@ -19,7 +19,7 @@ interface ListingCardProps {
     images: string[]
     locationAddr: string
     createdAt: string
-    seller: {
+    user: {
       id: string
       name: string | null
       image: string | null
@@ -119,17 +119,17 @@ export function ListingCard({ listing }: ListingCardProps) {
           <div className="flex items-center justify-between pt-2 border-t border-gray-100">
             <div className="flex items-center space-x-2">
               <Avatar 
-                src={listing.seller.image} 
-                name={listing.seller.name || 'Unknown'} 
+                src={listing.user.image} 
+                name={listing.user.name || 'Unknown'} 
                 size="xs" 
               />
               <div className="text-sm">
                 <div className="font-medium text-gray-900">
-                  {listing.seller.name || 'Anonymous'}
+                  {listing.user.name || 'Anonymous'}
                 </div>
-                {listing.seller.rating > 0 && (
+                {listing.user.rating > 0 && (
                   <div className="text-yellow-500">
-                    ★ {listing.seller.rating.toFixed(1)}
+                    ★ {listing.user.rating.toFixed(1)}
                   </div>
                 )}
               </div>

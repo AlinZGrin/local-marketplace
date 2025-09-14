@@ -68,7 +68,7 @@ interface ListingDetailProps {
 export function ListingDetail({ listingId }: ListingDetailProps) {
   const { data: session } = useSession()
   const router = useRouter()
-  const [listing, setListing] = useState<Listing | null>(null)
+  const [listing, setListing] = useState<any | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
@@ -110,7 +110,7 @@ export function ListingDetail({ listingId }: ListingDetailProps) {
       })
 
       if (response.ok) {
-        setListing(prev => prev ? {
+        setListing((prev: any) => prev ? {
           ...prev,
           isFavorited: !prev.isFavorited,
           _count: {
@@ -134,11 +134,11 @@ export function ListingDetail({ listingId }: ListingDetailProps) {
       return
     }
 
-    if (listing?.seller.id === session.user.id) {
+    if (listing?.user.id === session.user.id) {
       return // Can't message yourself
     }
 
-    router.push(`/messages?seller=${listing?.seller.id}&listing=${listingId}`)
+    router.push(`/messages?seller=${listing?.user.id}&listing=${listingId}`)
   }
 
   const handleMakeOffer = () => {
@@ -228,7 +228,7 @@ export function ListingDetail({ listingId }: ListingDetailProps) {
                   <>
                     {/* Image Navigation */}
                     <div className="absolute inset-x-0 bottom-4 flex justify-center space-x-2">
-                      {listing.images.map((_, index) => (
+                      {listing.images.map((_: any, index: number) => (
                         <button
                           key={index}
                           onClick={() => setCurrentImageIndex(index)}
@@ -241,7 +241,7 @@ export function ListingDetail({ listingId }: ListingDetailProps) {
                     
                     {/* Thumbnail Strip */}
                     <div className="flex space-x-2 p-4 overflow-x-auto">
-                      {listing.images.map((image, index) => (
+                      {listing.images.map((image: string, index: number) => (
                         <button
                           key={index}
                           onClick={() => setCurrentImageIndex(index)}
@@ -367,21 +367,21 @@ export function ListingDetail({ listingId }: ListingDetailProps) {
               
               <div className="flex items-center space-x-3">
                 <Avatar
-                  src={listing.seller.image}
-                  name={listing.seller.name || 'Seller'}
+                  src={listing.user.image}
+                  name={listing.user.name || 'Seller'}
                   size="md"
                 />
                 <div className="flex-1">
                   <div className="flex items-center space-x-2">
                     <h4 className="font-medium text-gray-900">
-                      {listing.seller.name || 'Anonymous'}
+                      {listing.user.name || 'Anonymous'}
                     </h4>
-                    {listing.seller.isVerified && (
+                    {listing.user.isVerified && (
                       <Shield className="h-4 w-4 text-blue-500" />
                     )}
                   </div>
                   <p className="text-sm text-gray-500">
-                    Member since {new Date(listing.seller.createdAt).getFullYear()}
+                    Member since {new Date(listing.user.createdAt).getFullYear()}
                   </p>
                 </div>
               </div>
@@ -389,24 +389,24 @@ export function ListingDetail({ listingId }: ListingDetailProps) {
               <div className="grid grid-cols-2 gap-4 py-3 border-t border-gray-100">
                 <div className="text-center">
                   <div className="text-lg font-semibold text-gray-900">
-                    {listing.seller._count.listings}
+                    {listing.user._count.listings}
                   </div>
                   <div className="text-sm text-gray-500">Listings</div>
                 </div>
                 <div className="text-center">
                   <div className="text-lg font-semibold text-gray-900 flex items-center justify-center">
-                    {listing.seller.averageRating ? (
+                    {listing.user.rating ? (
                       <>
                         <Star className="h-4 w-4 text-yellow-400 mr-1" />
-                        {listing.seller.averageRating.toFixed(1)}
+                        {listing.user.rating.toFixed(1)}
                       </>
                     ) : (
                       'New'
                     )}
                   </div>
                   <div className="text-sm text-gray-500">
-                    {listing.seller._count.receivedRatings > 0 
-                      ? `${listing.seller._count.receivedRatings} reviews`
+                    {listing.user.totalRatings > 0 
+                      ? `${listing.user.totalRatings} reviews`
                       : 'No reviews'
                     }
                   </div>
