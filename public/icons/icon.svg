@@ -1,0 +1,16 @@
+<!-- Simple SVG icon for Local Marketplace -->
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="512" height="512" fill="#2563eb" rx="80"/>
+  
+  <!-- Shopping bag shape -->
+  <path d="M128 192h256l-16 224H144l-16-224z" fill="#ffffff" opacity="0.9"/>
+  
+  <!-- Bag handles -->
+  <path d="M192 192v-32c0-35.35 28.65-64 64-64s64 28.65 64 64v32" 
+        fill="none" stroke="#ffffff" stroke-width="16" stroke-linecap="round"/>
+  
+  <!-- Location pin overlay -->
+  <circle cx="384" cy="128" r="32" fill="#ef4444"/>
+  <circle cx="384" cy="120" r="8" fill="#ffffff"/>
+</svg>

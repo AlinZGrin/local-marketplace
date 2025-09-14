@@ -1,0 +1,63 @@
+version: '3.8'
+
+services:
+  # Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: marketplace-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: marketplace
+      POSTGRES_USER: marketplace_user
+      POSTGRES_PASSWORD: marketplace_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - marketplace-network
+
+  # Redis for caching and sessions
+  redis:
+    image: redis:7-alpine
+    container_name: marketplace-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - marketplace-network
+
+  # Application (for production)
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: marketplace-app
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://marketplace_user:marketplace_password@postgres:5432/marketplace
+      NEXTAUTH_URL: http://localhost:3000
+      NEXTAUTH_SECRET: your-nextauth-secret-here
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - marketplace-network
+    # Uncomment for development with hot reload
+    # volumes:
+    #   - .:/app
+    #   - /app/node_modules
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  marketplace-network:
+    driver: bridge

@@ -1,0 +1,15 @@
+# *
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /api/
+Disallow: /auth/
+Disallow: /messages/
+Disallow: /profile/
+
+# Host
+Host: https://localhost:3000
+
+# Sitemaps
+Sitemap: https://localhost:3000/sitemap.xml
+Sitemap: https://localhost:3000/listings-sitemap.xml
