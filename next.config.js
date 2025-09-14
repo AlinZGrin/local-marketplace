@@ -115,7 +115,7 @@ const nextConfig = {
     serverComponentsExternalPackages: ['bcryptjs']
   },
   images: {
-    domains: ['res.cloudinary.com', 'images.unsplash.com'],
+    domains: ['res.cloudinary.com', 'images.unsplash.com', 'placehold.co', 'via.placeholder.com'],
     formats: ['image/webp', 'image/avif'],
   },
   eslint: {
@@ -126,7 +126,7 @@ const nextConfig = {
   },
   swcMinify: true,
   compiler: {
-    removeConsole: process.env.NODE_ENV === 'production',
+    removeConsole: false, // Keep console logs for debugging
   },
   output: process.env.BUILD_STANDALONE === 'true' ? 'standalone' : undefined,
 }

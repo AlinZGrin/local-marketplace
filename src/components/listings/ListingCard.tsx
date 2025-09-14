@@ -37,6 +37,7 @@ interface ListingCardProps {
 
 export function ListingCard({ listing }: ListingCardProps) {
   const [isImageLoaded, setIsImageLoaded] = useState(false)
+  const [imageError, setImageError] = useState(false)
   const [isFavorited, setIsFavorited] = useState(false)
 
   const handleToggleFavorite = (e: React.MouseEvent) => {
@@ -45,12 +46,17 @@ export function ListingCard({ listing }: ListingCardProps) {
     // TODO: Implement API call to save/remove favorite
   }
 
+  const handleImageError = () => {
+    setImageError(true)
+    setIsImageLoaded(true)
+  }
+
   return (
     <Link href={`/listings/${listing.id}`}>
       <Card className="group overflow-hidden hover:shadow-lg transition-shadow duration-200" padding="none">
         {/* Image */}
         <div className="relative aspect-[4/3] bg-gray-100">
-          {listing.images[0] && (
+          {listing.images[0] && !imageError ? (
             <Image
               src={listing.images[0]}
               alt={listing.title}
@@ -59,7 +65,20 @@ export function ListingCard({ listing }: ListingCardProps) {
                 isImageLoaded ? 'opacity-100' : 'opacity-0'
               }`}
               onLoad={() => setIsImageLoaded(true)}
+              onError={handleImageError}
             />
+          ) : (
+            // Fallback placeholder
+            <div className="absolute inset-0 bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
+              <div className="text-center text-gray-400">
+                <div className="w-16 h-16 mx-auto mb-2 bg-gray-300 rounded-lg flex items-center justify-center">
+                  <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <span className="text-sm font-medium">No Image</span>
+              </div>
+            </div>
           )}
           
           {/* Favorite Button */}
@@ -84,7 +103,7 @@ export function ListingCard({ listing }: ListingCardProps) {
           </div>
 
           {/* Loading Skeleton */}
-          {!isImageLoaded && (
+          {!isImageLoaded && !imageError && listing.images[0] && (
             <div className="absolute inset-0 bg-gray-200 animate-pulse" />
           )}
         </div>

@@ -1,0 +1,34 @@
+import { NextResponse } from 'next/server'
+
+export async function GET() {
+  const manifest = {
+    "name": "Local Marketplace",
+    "short_name": "Marketplace",
+    "description": "A web application for buying and selling items locally",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#ffffff",
+    "theme_color": "#2563eb",
+    "orientation": "portrait-primary",
+    "scope": "/",
+    "categories": ["shopping", "marketplace", "lifestyle"],
+    "lang": "en",
+    "dir": "ltr",
+    "icons": [
+      {
+        "src": "/icons/icon.svg",
+        "sizes": "any",
+        "type": "image/svg+xml",
+        "purpose": "any maskable"
+      }
+    ],
+    "prefer_related_applications": false
+  }
+
+  return NextResponse.json(manifest, {
+    headers: {
+      'Content-Type': 'application/manifest+json',
+      'Cache-Control': 'public, max-age=31536000',
+    },
+  })
+}

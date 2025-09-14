@@ -4,9 +4,45 @@ const prisma = new PrismaClient()
 
 // Mock image URLs from placeholder services
 const getRandomImage = (category: string, index: number) => {
-  const baseUrl = 'https://picsum.photos'
-  const seed = `${category}-${index}`
-  return `${baseUrl}/400/300?random=${seed}`
+  // Using multiple reliable placeholder services as fallbacks
+  const imageMap: { [key: string]: string[] } = {
+    phone: [
+      'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=400&h=300&fit=crop&auto=format',
+      'https://images.unsplash.com/photo-1512499617640-c74ae3a79d37?w=400&h=300&fit=crop&auto=format'
+    ],
+    laptop: [
+      'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=400&h=300&fit=crop&auto=format',
+      'https://images.unsplash.com/photo-1541807084-5c52b6b3adef?w=400&h=300&fit=crop&auto=format',
+      'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=400&h=300&fit=crop&auto=format'
+    ],
+    headphones: [
+      'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&h=300&fit=crop&auto=format'
+    ],
+    tablet: [
+      'https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?w=400&h=300&fit=crop&auto=format',
+      'https://images.unsplash.com/photo-1561154464-82e9adf32764?w=400&h=300&fit=crop&auto=format'
+    ],
+    table: [
+      'https://images.unsplash.com/photo-1506439773649-6e0eb8cfb237?w=400&h=300&fit=crop&auto=format',
+      'https://images.unsplash.com/photo-1549497538-303791108f95?w=400&h=300&fit=crop&auto=format'
+    ],
+    chair: [
+      'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=400&h=300&fit=crop&auto=format'
+    ],
+    bed: [
+      'https://images.unsplash.com/photo-1505693314120-0d443867891c?w=400&h=300&fit=crop&auto=format',
+      'https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?w=400&h=300&fit=crop&auto=format'
+    ]
+  }
+  
+  const categoryImages = imageMap[category] || []
+  if (categoryImages.length === 0) {
+    // Fallback to a reliable placeholder service
+    return `https://placehold.co/400x300/e5e7eb/9ca3af?text=${encodeURIComponent(category)}`
+  }
+  
+  const imageUrl = categoryImages[(index - 1) % categoryImages.length]
+  return imageUrl
 }
 
 // Sample locations in San Francisco Bay Area

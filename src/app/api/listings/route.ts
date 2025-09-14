@@ -46,7 +46,16 @@ export async function GET(request: NextRequest) {
     }
 
     if (category) {
-      where.categoryId = category
+      // Check if category is a slug or an ID
+      if (category.includes('-') || category.toLowerCase() === category) {
+        // Likely a slug, filter by category slug
+        where.category = {
+          slug: category.toLowerCase()
+        }
+      } else {
+        // Likely an ID, filter by categoryId
+        where.categoryId = category
+      }
     }
 
     if (condition) {

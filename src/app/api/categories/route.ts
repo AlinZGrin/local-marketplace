@@ -19,16 +19,18 @@ export async function GET() {
       }
     })
 
-    return NextResponse.json({
-      categories: categories.map(category => ({
+    return NextResponse.json(
+      categories.map((category: any) => ({
         id: category.id,
         name: category.name,
         slug: category.slug,
-        listingCount: category._count.listings,
+        _count: {
+          listings: category._count.listings
+        },
         createdAt: category.createdAt,
         updatedAt: category.updatedAt,
       }))
-    })
+    )
   } catch (error) {
     console.error('Error fetching categories:', error)
     return NextResponse.json(
