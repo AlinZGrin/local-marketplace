@@ -107,13 +107,13 @@ export async function GET(request: NextRequest) {
       description: listing.description,
       price: listing.price,
       condition: listing.condition,
-      address: listing.address,
-            images: listing.images || [], // PostgreSQL arrays are already arrays
+      locationAddr: listing.address, // Map address to locationAddr for frontend
+      images: listing.images || [], // PostgreSQL arrays are already arrays
       views: listing.views,
       isFeatured: listing.isFeatured,
       createdAt: listing.createdAt,
       updatedAt: listing.updatedAt,
-      user: {
+      user: { // Keep as user to match frontend component
         id: listing.user.id,
         name: listing.user.name,
         image: listing.user.image,

@@ -24,7 +24,7 @@ interface Listing {
   locationAddr: string
   images: string[]
   createdAt: string
-  seller: {
+  user: {
     id: string
     name: string | null
     image: string | null
